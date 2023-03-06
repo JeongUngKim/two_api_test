@@ -67,3 +67,36 @@ class search(Resource) :
         return {"movie" : movie_list,
                 "drama" : tv_list},200
 
+
+
+class contentLike(Resource) :
+    @jwt_required()
+    def post(self,contentId):
+        userId = get_jwt_identity()
+
+        try :
+            connection = get_connection()
+
+            query = '''insert into contentLike(contentId,contentLikeUserId)
+                        values(%s,%s);'''
+            record = (contentId,userId)
+
+            cursor = connection.cursor()
+            cursor.execute(query,record)
+
+            connection.commit()
+
+            cursor.close()
+
+            connection.close()
+
+        except Error as e :
+            print(str(e))
+
+            cursor.close()
+
+            connection.close()
+
+            return {'fail',str(e)},500
+        
+        return {"result":"success"},200
