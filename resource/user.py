@@ -5,6 +5,7 @@ from flask_jwt_extended import create_access_token, get_jwt, jwt_required
 from mysql_connection import get_connection
 from email_validator import validate_email, EmailNotValidError
 from utils import check_password, hash_password
+from flask_jwt_extended import jwt_required,get_jwt_identity
 
 class UserRegisterResource(Resource) :
     def post(self) :
@@ -188,4 +189,45 @@ class UserPasswordChanged(Resource):
             connection.close()
 
         return {"result":"success"},200
- 
+
+class UserContentLike(Resource):
+    @jwt_required()
+    def get(self) :
+        userId = get_jwt_identity()
+
+        try :
+            connection = get_connection()
+
+            query = '''select cl.contentId,cl.contentLikeUserId,c.title,c.genre,c.content,c.imgUrl,c.contentRating,c.createdYear,c.tmdbcontentId 
+                        from contentLike cl join content c 
+                        on cl.contentId = c.Id 
+                        where cl.contentLikeUserId = %s ; '''
+            
+            record = (userId,)
+
+            cursor = connection.cursor(dictionary=True)
+
+            cursor.execute(query,record)
+
+            contentLike_list = cursor.fetchall()
+
+            i = 0
+            
+            for row in contentLike_list :
+                contentLike_list[i]['createdYear'] = row['createdYear'].isoformat()
+                i = i + 1
+
+            cursor.close()
+
+            connection.close()
+
+        except Error as e :
+            print(str(e))
+
+            cursor.close()
+
+            connection.close()
+
+            return {"fail":str(e)},500
+
+        return {"contentLike_list" : contentLike_list },200

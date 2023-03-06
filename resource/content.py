@@ -5,50 +5,80 @@ from mysql_connection import get_connection
 from flask_jwt_extended import jwt_required,get_jwt_identity
 
 class search(Resource) :
-    def get(self) :
+    def post(self) :
 
-        keyword = request.args.get("keyword")
-        genre = request.args.get("genre")
-        limit = request.args.get("limit")
-        rating = request.args.get("rating")
-        year = request.args.get("year")
-        offset = request.args.get("offset")
+        data = request.get_json()
+
+        keyword = data["keyword"]
+        genre = data["genre"]
+        limit = data["limit"]
+        rating = data["rating"]
+        year = data["year"]
+        offset = data["offset"]
+        filtering = data["filtering"]
+        sort = data["sort"]
+        
+        if filtering == "":
+            filtering = "title"
+
+        if filtering not in ["title","contentRating","createdYear"] :
+            return {"sort_error":"필터 정렬 값 오류."}
+
+        if sort == "":
+            sort = "asc"
+
         if rating == "" : 
-            rating = 5.0
+            rating = 0.0
 
         if year == "" :
-            year = '2020-01-01'
+            year = '1945-01-01'
+
+        if genre == "" :
+            genre = "[,]"
+
+        if limit =="" :
+            limit = "10"
+        if offset =="":
+            offset = "0"
 
         genre = genre.split(",")
-        print(year)
+        print(genre)
         try :
             connection = get_connection()
 
             query='''select * 
                 from content 
-                where title like "% '''+ keyword+'''%" and type = "movie" and
-                genre like "%'''+genre[0]+'''%" and genre like "%'''+genre[1]+'''%" and contentRating >= '''+str(rating)+''' and createdyear >= "'''+str(year)+'''"
-                limit '''+offset+''',''' +limit+''';'''
+                where (title like "%'''+ keyword+'''%" or content like "%'''+ keyword+'''%" ) and type = "movie" and
+                genre like "%'''+genre[0]+'''%" and genre like "%'''+genre[1]+'''%" and contentRating >= '''+str(rating)+''' and createdYear >= "'''+str(year)+'''"
+                order by '''+filtering + ''' '''+sort+'''
+                limit '''+ str(offset)+''',''' +str(limit)+''';'''
            
-            
+            print(query)
             cursor = connection.cursor(dictionary=True)
             cursor.execute(query)
 
             movie_list = cursor.fetchall()
 
+
             i = 0 
             for row in movie_list :
                 movie_list[i]['createdYear'] = row['createdYear'].isoformat()
                 i = i + 1
-
-            query = '''select * 
-                    from content 
-                    where title like "%'''+keyword+'''%" and type = "tv" and
-                    genre like "%'''+genre[0] + '''%" and genre like "%'''+genre[1] +'''%"
-                    limit 10 ,'''  + limit + '''; '''
             
-            cursor.execute(query)
+            cursor.close()
+            connection.close()
+            query='''select * 
+                from content 
+                where (title like "%'''+ keyword+'''%" or content like "%'''+ keyword+'''%" ) and type = "tv" and
+                genre like "%'''+genre[0]+'''%" and genre like "%'''+genre[1]+'''%" and contentRating >= '''+str(rating)+''' and createdYear >= "'''+str(year)+'''"
+                order by '''+filtering + ''' '''+sort+'''
+                limit '''+ str(offset)+''',''' +str(limit)+''';'''
+            
 
+            connection=get_connection()
+            cursor = connection.cursor(dictionary=True)
+            cursor.execute(query)
+            
             tv_list = cursor.fetchall()
             i = 0 
             for row in tv_list :
@@ -65,9 +95,7 @@ class search(Resource) :
             return {"fail" : str(e)},500
         
         return {"movie" : movie_list,
-                "drama" : tv_list},200
-
-
+                "tv":tv_list},200
 
 class contentLike(Resource) :
     @jwt_required()
@@ -100,3 +128,75 @@ class contentLike(Resource) :
             return {'fail',str(e)},500
         
         return {"result":"success"},200
+
+    @jwt_required()
+    def delete(self,contentId) :
+        userId = get_jwt_identity()
+
+        try :
+            connection = get_connection()
+
+            query = '''delete from contentLike 
+                    where contentId = %s and contentLikeUserId = %s ;'''
+            
+            record = (contentId, userId)
+
+            cursor = connection.cursor()
+
+            cursor.execute(query,record)
+
+            connection.commit()
+
+            cursor.close()
+
+            connection.close()
+        
+        except Error as e : 
+            print(str(e))
+
+            cursor.close()
+
+            connection.close()
+
+            return {"error":str(e)},500
+
+        return {"result":"success"},200
+            
+class contentReview(Resource) :
+    @jwt_required()
+    def post(self,contentId) :
+
+        userId = get_jwt_identity()
+
+        data = request.get_json()
+
+        try:
+            connection = get_connection()
+
+            query = '''insert into contentReview(contentId,contentReviewUserId, title,content,userRating)
+                        values(%s,%s,%s,%s,%s);'''
+            
+            record = (contentId,userId, data["title"],data["content"],data["userRating"])
+
+            cursor = connection.cursor()
+
+            cursor.execute(query,record)
+
+            connection.commit()
+
+            cursor.close()
+
+            connection.close()
+
+        except Error as e :
+
+            print(str(e))
+            
+            cursor.close()
+
+            connection.close()
+
+            return {"fail":str(e)},500
+
+        return {"result":"success"},200
+
