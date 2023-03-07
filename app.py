@@ -3,15 +3,20 @@ from flask_restful import Api
 from config import Config
 from flask_jwt_extended import JWTManager
 
-from resource.content import contentLike, contentReview, contentReviewUD, search
-from resource.user import UserContentLike, UserIsEmail, UserIsId, UserIsNickname, UserIspassword, UserLoginResource, UserLogoutResource, UserPasswordChanged, UserRegisterResource
-
+from resource.content import ReviewComment, ReviewCommentUD, contentLike, contentReview, contentReviewLike, contentReviewUD, search
+from resource.user import UserContentLike, UserGenre, UserIsEmail, UserIsId, UserIsNickname, UserIspassword, UserLoginResource, UserLogoutResource, UserPasswordChanged, UserProfileChange, UserRegisterResource
+from resource.user import jwt_blacklist
 
 app = Flask(__name__)
 
 app.config.from_object(Config)
 
 jwt = JWTManager(app)
+
+@jwt.token_in_blocklist_loader
+def check_if_token_is_revoked(jwt_header, jwt_payload) :
+    jti = jwt_payload['jti']
+    return jti in jwt_blacklist
 
 api = Api(app)
 
@@ -26,8 +31,11 @@ api.add_resource(contentReview,'/content/<int:contentId>/review')
 api.add_resource(contentReviewUD,'/content/<int:contentId>/review/<int:contentReviewId>')
 
 # 컨텐츠 리뷰 좋아요 api
+api.add_resource(contentReviewLike,'/contentReview/<int:contentReviewId>/like')
 
 # 컨텐츠 리뷰 댓글 관련 api
+api.add_resource(ReviewComment,'/contentComment/<int:contentReviewId>')
+api.add_resource(ReviewCommentUD,'/contentComment/<int:contentReviewId>/<int:commentId>')
 
 # 유저 로그인관련 api
 api.add_resource(UserRegisterResource,"/register")
@@ -38,10 +46,11 @@ api.add_resource(UserIsId,"/isId")
 api.add_resource(UserIsNickname,"/isNickname")
 api.add_resource(UserIspassword,"/ispassword")
 api.add_resource(UserPasswordChanged,"/changedpassword")
-
+api.add_resource(UserGenre,'/userGenre')
 
 # 유저 정보 관련 api
 api.add_resource(UserContentLike,'/contentlike/me')
+api.add_resource(UserProfileChange,'/user')
 
 if __name__ == '__main__' : 
     app.run()

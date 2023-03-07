@@ -42,7 +42,7 @@ class search(Resource) :
             offset = "0"
 
         genre = genre.split(",")
-        print(genre)
+        
         try :
             connection = get_connection()
 
@@ -53,13 +53,11 @@ class search(Resource) :
                 order by '''+filtering + ''' '''+sort+'''
                 limit '''+ str(offset)+''',''' +str(limit)+''';'''
            
-            print(query)
+            
             cursor = connection.cursor(dictionary=True)
             cursor.execute(query)
 
             movie_list = cursor.fetchall()
-
-
             i = 0 
             for row in movie_list :
                 movie_list[i]['createdYear'] = row['createdYear'].isoformat()
@@ -67,6 +65,7 @@ class search(Resource) :
             
             cursor.close()
             connection.close()
+
             query='''select * 
                 from content 
                 where (title like "%'''+ keyword+'''%" or content like "%'''+ keyword+'''%" ) and type = "tv" and
@@ -88,6 +87,21 @@ class search(Resource) :
             cursor.close()
             connection.close()
 
+            connection = get_connection()
+
+            query = '''select * from actor where name like "%''' +keyword+'''%" ;  '''
+            cursor = connection.cursor(dictionary=True)
+            cursor.execute(query)
+            actor_list = cursor.fetchall()
+
+            i = 0
+            for row in actor_list :
+                actor_list[i]['year'] = row['year'].isoformat()
+                i = i + 1
+
+            cursor.close()
+            connection.close()     
+
         except Error as e :
             print(e)
             cursor.close()
@@ -95,7 +109,8 @@ class search(Resource) :
             return {"fail" : str(e)},500
         
         return {"movie" : movie_list,
-                "tv":tv_list},200
+                "tv":tv_list,
+                "actor":actor_list},200
 
 class contentLike(Resource) :
     @jwt_required()
@@ -113,6 +128,7 @@ class contentLike(Resource) :
             cursor.execute(query,record)
 
             connection.commit()
+
 
             cursor.close()
 
@@ -184,6 +200,8 @@ class contentReview(Resource) :
 
             connection.commit()
 
+            lastId = cursor.lastrowid
+
             cursor.close()
 
             connection.close()
@@ -198,11 +216,11 @@ class contentReview(Resource) :
 
             return {"fail":str(e)},500
 
-        return {"result":"success"},200
+        return {"result":"success","contentReviewId":lastId},200
 
 class contentReviewUD(Resource) :
     @jwt_required()
-    def post(self ,contentId , contentReviewId) :
+    def put(self ,contentId , contentReviewId) :
         
         userId = get_jwt_identity()
         
@@ -271,8 +289,155 @@ class contentReviewUD(Resource) :
 
 class contentReviewLike(Resource) :
     @jwt_required()
-    def post(self,contentId,contentReviewId) :
+    def post(self,contentReviewId) :
         userId = get_jwt_identity()
 
+        try :
+            connection = get_connection()
+
+            query = '''insert into contentReviewLike(contentReviewId,contentReviewLikeUserId)
+                        values(%s,%s);'''
+            record = (contentReviewId , userId)
+
+            cursor = connection.cursor()
+            cursor.execute(query,record)
+
+            connection.commit()
+
+            cursor.close()
+            connection.close()
+
+        except Error as e :
+            print(str(e))
+            cursor.close()
+            connection.close()
+            return {"error":str(e)},500
         
+        return {"result":"success"},200
+    
+    @jwt_required()
+    def delete(self,contentReviewId) :
+        userId = get_jwt_identity()
+
+        try :
+            connection = get_connection()
+
+            query ='''delete from contentReviewLike 
+                    where contentReviewId = %s and contentReviewLikeUserId = %s ;'''
+            record = (contentReviewId , userId)
+
+            cursor = connection.cursor()
+            cursor.execute(query,record)
+
+            connection.commit()
+
+            cursor.close()
+            connection.close()
+
+        except Error as e :
+            print(str(e))
+            cursor.close()
+            connection.close()
+            return {"error":str(e)},500
+        
+        return {"result":"success"},200
+
+class ReviewComment(Resource):
+    @jwt_required()
+    def post(self,contentReviewId) :
+        userId = get_jwt_identity()
+        data = request.get_json()
+        try :
+            connection = get_connection()
+
+            query = '''insert into contentReviewComment(contentReviewId , commentUserId , comment )
+                        values (%s,%s,%s);'''
+            record = (contentReviewId,userId,data['comment'])
+
+            cursor = connection.cursor()
+
+            cursor.execute(query,record)
+
+            connection.commit()
+
+            lastId = cursor.lastrowid
+            cursor.close()
+
+            connection.close()
+        except Error as e :
+            print(str(e))
+            cursor.close()
+            connection.close()
+            return {'error':str(e)},500
+        
+        return {'result':'success','commentId':lastId},200
+
+class ReviewCommentUD(Resource):
+    @jwt_required()
+    def delete(self,contentReviewId,commentId) :
+        
+        userId = get_jwt_identity()
+
+        try : 
+            connection = get_connection()
+
+            query = '''delete from contentReviewComment
+                    where commentId = %s and contentReviewId = %s and commentUserId = %s ;'''
+            record = (commentId,contentReviewId,userId)
+
+            cursor = connection.cursor()
+
+            cursor.execute(query,record)
+
+            connection.commit()
+
+            cursor.close()
+
+            connection.close()
+
+        except Error as e :
+            print(str(e))
+
+            cursor.close()
+
+            connection.close()
+
+            return {'error':str(e)},500
+        return {'result':'success'},200        
+
+    @jwt_required()
+    def put(self,contentReviewId,commentId) :
+
+        userId = get_jwt_identity()
+
+        data = request.get_json()
+
+        try :
+            connection = get_connection()
+
+            query = '''update contentReviewComment
+                        set comment = %s
+                        where commentId = %s and contentReviewId = %s and commentUserId = %s;'''
+            record = (data['comment'],commentId,contentReviewId,userId)
+
+            cursor = connection.cursor()
+
+            cursor.execute(query,record)
+
+            connection.commit()
+
+            cursor.close()
+
+            connection.close()
+
+        except Error as e :
+            print(str(e))
+
+            cursor.close()
+
+            connection.close()
+
+            return {'error':str(e)},500
+
+        return {'result':'success'},200        
 

@@ -30,12 +30,13 @@ class UserRegisterResource(Resource) :
         print(data)
         data = json.loads(data)
 
-        print(data["nickname"])
+        
         if 'profileImg' not in request.files :
             return {'error' : '사진이 없습니다.'}
+
         file = request.files['profileImg']
         
-        new_file_name = data["nickname"]+"_profileImg.jpg"
+        new_file_name = data['userEmail']+"_profileImg.jpg"
         file.filename = new_file_name
         
         # 2. 이메일 주소형식이 올바른지 확인한다. 
@@ -55,14 +56,7 @@ class UserRegisterResource(Resource) :
         hashed_password = hash_password( data['password']  )
 
         # 5. DB 에 회원정보를 저장한다.
-        client = boto3.client(
-                   's3', 
-                    aws_access_key_id = Config.AWS_ACCESS_KEY_ID,
-                    aws_secret_access_key = Config.AWS_SECERT_ACCESS_KEY)
-        try :
-                client.upload_fileobj(file,Config.S3_BUCKET,new_file_name,ExtraArgs={'ACL':'public-read', 'ContentType':file.content_type } )
-        except Exception as e :
-                return {'error' : str(e) },500
+        
         
         profileImgUrl = Config.S3_LOCATION+new_file_name
 
@@ -80,9 +74,14 @@ class UserRegisterResource(Resource) :
 
             cursor.close()
             connection.close()
-
-            
-
+            client = boto3.client(
+                   's3', 
+                    aws_access_key_id = Config.AWS_ACCESS_KEY_ID,
+                    aws_secret_access_key = Config.AWS_SECERT_ACCESS_KEY)
+            try :
+                client.upload_fileobj(file,Config.S3_BUCKET,new_file_name,ExtraArgs={'ACL':'public-read', 'ContentType':file.content_type } )
+            except Exception as e :
+                return {'error' : str(e) },500
         except Error as e :
             print(e)
             cursor.close()
@@ -278,7 +277,7 @@ class UserIsNickname(Resource) :
             return {"result ": "닉네임으로 사용이 불가능 합니다.","result_code":0 },200
 
 class UserPasswordChanged(Resource):
-    def post(self) :
+    def put(self) :
         # { userEmail : abc@naver.com 
         #   newpassword : 1234 }
 
@@ -347,3 +346,159 @@ class UserContentLike(Resource):
             return {"fail":str(e)},500
 
         return {"contentLike_list" : contentLike_list },200
+
+class UserGenre(Resource) :
+    @jwt_required()
+    def post(self) :
+        userId = get_jwt_identity()
+
+        data = request.get_json()
+
+        try :
+            connection = get_connection()
+
+            query = '''insert into userGenre(userId,tagId)
+                        values(%s,%s);'''
+            
+            record = [ (userId , data['genre'][0]), 
+                       (userId , data['genre'][1]),
+                       (userId , data['genre'][2]) ]
+            
+            cursor = connection.cursor()
+
+            cursor.executemany(query,record)
+
+            connection.commit()
+
+            cursor.close()
+
+            connection.close()
+
+        except Error as e :
+            print(str(e))
+
+            cursor.close()
+            connection.close()
+
+            return {'error':str(e)},500
+        
+        return {'result':'success'},200
+    
+
+class UserProfileChange(Resource) :
+    @jwt_required()
+    def put(self) :
+        userId = get_jwt_identity()
+
+        data = request.form.get("data")
+        data = json.loads(data)
+
+        hashed_password = hash_password( data['password']  )
+        
+        
+        try :
+            if 'profileImg' not in request.files :
+                print('1')
+                query = '''update user
+                        set nickname=%s,password = %s
+                        where id = %s ;'''
+                record = (data['nickname'] , hashed_password , userId)
+            else :
+                file = request.files['profileImg']
+                new_file_name = data['userEmail']+"_profileImg.jpg"
+                file.filename = new_file_name
+                
+                client = boto3.client(
+                    's3', 
+                        aws_access_key_id = Config.AWS_ACCESS_KEY_ID,
+                        aws_secret_access_key = Config.AWS_SECERT_ACCESS_KEY)
+                try :
+                    client.upload_fileobj(file,Config.S3_BUCKET,new_file_name,ExtraArgs={'ACL':'public-read', 'ContentType':file.content_type } )
+                except Exception as e :
+                    return {'error' : str(e) },500
+            
+                profileImgUrl = Config.S3_LOCATION+new_file_name
+
+                query = '''update user
+                        set nickname=%s,password = %s,profileImgUrl = %s
+                        where id = %s ;'''
+                record = (data['nickname'] , hashed_password ,profileImgUrl, userId)
+
+         
+            connection = get_connection()
+
+            cursor = connection.cursor()
+            
+            cursor.execute(query,record)
+
+            connection.commit()
+
+            cursor.close()
+
+            connection.close()
+
+            jti = get_jwt()['jti']
+            jwt_blacklist.add(jti)
+
+        except Error as e :
+
+            print(str(e))
+            cursor.close()
+            connection.close()
+
+            return {'error':str(e)},500
+        
+        
+
+        return {'result':'success','state':'logout'},200
+
+    @jwt_required()
+    def delete(self) :
+        userId = get_jwt_identity()
+         
+        try :
+            connection = get_connection()
+
+            query = '''select userEmail from user
+                        where id = %s ;'''
+            record = (userId,)
+
+            cursor = connection.cursor(dictionary=True)
+
+            cursor.execute(query,record)
+
+            email = cursor.fetchall()
+
+            cursor.close()
+
+            connection.close()
+            print(email[0]['userEmail'])
+            file_name = email[0]['userEmail'] + "_profileImg.jpg"
+
+            client = boto3.client(
+                    's3', 
+                        aws_access_key_id = Config.AWS_ACCESS_KEY_ID,
+                        aws_secret_access_key = Config.AWS_SECERT_ACCESS_KEY)
+            
+            client.delete_object(Bucket = Config.S3_BUCKET , Key= file_name )
+
+            connection = get_connection()
+
+            query = '''delete from user
+                    where id = %s;'''
+            record = (userId,)
+            cursor = connection.cursor()
+            cursor.execute(query,record)
+            connection.commit()
+            cursor.close()
+
+            connection.close()
+
+
+        except Exception as e :
+            print(str(e))
+            cursor.close()
+            connection.close()
+            return {'error':str(e)},500
+        
+        return {'result':'success'},200
