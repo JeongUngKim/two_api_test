@@ -200,3 +200,79 @@ class contentReview(Resource) :
 
         return {"result":"success"},200
 
+class contentReviewUD(Resource) :
+    @jwt_required()
+    def post(self ,contentId , contentReviewId) :
+        
+        userId = get_jwt_identity()
+        
+        data = request.get_json()
+        
+        try : 
+            connection = get_connection()
+
+            query = '''update contentReview 
+                        set title = %s ,content = %s
+                        where contentreviewId = %s and contentReviewUserId = %s
+                        ;'''
+            
+            record = (data['title'],data['content'],contentReviewId,userId)
+
+            cursor = connection.cursor()
+
+            cursor.execute(query,record)
+
+            connection.commit()
+
+            cursor.close()
+
+            connection.close()
+
+        except Error as e :
+            str(e)
+            cursor.close()
+            connection.close()
+
+            return {'error':str(e)},500
+        
+        return {'result':'success'} , 200
+
+    @jwt_required()
+    def delete(self,contentId,contentReviewId) :
+        userId = get_jwt_identity()
+     
+        try : 
+            connection = get_connection()
+
+            query = '''delete from contentReview
+                    where contentReviewId = %s and contentReviewUserId = %s;
+                        ;'''
+            
+            record = (contentReviewId,userId)
+
+            cursor = connection.cursor()
+
+            cursor.execute(query,record)
+
+            connection.commit()
+
+            cursor.close()
+
+            connection.close()
+
+        except Error as e :
+            str(e)
+            cursor.close()
+            connection.close()
+
+            return {'error':str(e)},500
+        
+        return {'result':'success'} , 200
+
+class contentReviewLike(Resource) :
+    @jwt_required()
+    def post(self,contentId,contentReviewId) :
+        userId = get_jwt_identity()
+
+        
+

@@ -1,3 +1,4 @@
+import json
 from flask import request
 from flask_restful import Resource
 from mysql.connector import Error
@@ -7,6 +8,9 @@ from email_validator import validate_email, EmailNotValidError
 from utils import check_password, hash_password
 from flask_jwt_extended import jwt_required,get_jwt_identity
 
+import boto3
+from config import Config
+
 class UserRegisterResource(Resource) :
     def post(self) :
 #         {
@@ -15,16 +19,31 @@ class UserRegisterResource(Resource) :
 #            "password" : "1234",
 #            "gender" : "1",
 #            "age" :"28"
+#            "name":""
+#            "questionNum":"1"
+#            "questionAnswer":"인천"                
 #           }
+#        폼데이터 profileImg 있음
 
          # 1. 클라이언트가 보낸 데이터를 받아준다.
-        data = request.get_json()
+        data = request.form.get("data")
+        print(data)
+        data = json.loads(data)
+
+        print(data["nickname"])
+        if 'profileImg' not in request.files :
+            return {'error' : '사진이 없습니다.'}
+        file = request.files['profileImg']
+        
+        new_file_name = data["nickname"]+"_profileImg.jpg"
+        file.filename = new_file_name
+        
         # 2. 이메일 주소형식이 올바른지 확인한다. 
         try : 
             validate_email( data["userEmail"] )
         except EmailNotValidError as e :
             print(str(e))
-            return {'error' : str(e)} , 400
+            return {'error' : '이메일 형식을 확인하세요'} , 400
         
         # 3. 비밀번호의 길이가 유효한지 체크한다.
         # 만약, 비번이 4자리 이상, 12자리 이하다라면,
@@ -36,12 +55,23 @@ class UserRegisterResource(Resource) :
         hashed_password = hash_password( data['password']  )
 
         # 5. DB 에 회원정보를 저장한다.
+        client = boto3.client(
+                   's3', 
+                    aws_access_key_id = Config.AWS_ACCESS_KEY_ID,
+                    aws_secret_access_key = Config.AWS_SECERT_ACCESS_KEY)
+        try :
+                client.upload_fileobj(file,Config.S3_BUCKET,new_file_name,ExtraArgs={'ACL':'public-read', 'ContentType':file.content_type } )
+        except Exception as e :
+                return {'error' : str(e) },500
+        
+        profileImgUrl = Config.S3_LOCATION+new_file_name
+
         try:
             connection = get_connection()
-            query = '''insert into user(nickname,userEmail,password,gender,age)
-                        values(%s,%s,%s,%s,%s);'''
+            query = '''insert into user(nickname,userEmail,password,gender,age,profileImgUrl,name,questionNum,questionAnswer)
+                        values(%s,%s,%s,%s,%s,%s,%s,%s,%s);'''
             record = ( data["nickname"], data["userEmail"],hashed_password ,
-                      data["gender"],data["age"] )
+                      data["gender"],data["age"] , profileImgUrl , data["name"],data["questionNum"],data["questionAnswer"])
             cursor = connection.cursor()
             cursor.execute(query,record)
             connection.commit()
@@ -50,6 +80,9 @@ class UserRegisterResource(Resource) :
 
             cursor.close()
             connection.close()
+
+            
+
         except Error as e :
             print(e)
             cursor.close()
@@ -158,8 +191,91 @@ class UserIspassword(Resource):
         except Error as e :
             cursor.close()
             connection.close()
+            return{"error",str(e)},500
 
         return {"result":"success","userEmail":result_list[0]["userEmail"]},200
+
+class UserIsId(Resource) :
+    def post(self) :
+#         {
+#     "name":"정웅",
+#     "questionNum"="1",
+#     "questionAnswer":"인천"
+# }
+        data = request.get_json()
+
+        try :
+            connection = get_connection()
+
+            query = '''select id,name,userEmail 
+                    from user
+                    where name = %s and questionNum= %s and questionAnswer = %s ;'''
+            record = (data['name'] , data['questionNum'] , data['questionAnswer'])
+
+            cursor = connection.cursor(dictionary=True)
+
+            cursor.execute(query,record)
+
+            user_list = cursor.fetchall()
+
+            cursor.close()
+            connection.close()
+
+
+        except Error as e :
+            cursor.close()
+            connection.close()
+            return{"error",str(e)},500
+        
+        return {"user":user_list},200
+
+class UserIsEmail(Resource) :
+    def post(self) :
+        data = request.get_json()
+
+        try :
+            connection = get_connection()
+            query = '''select userEmail from user where userEmail = %s ;'''
+            record = (data['userEmail'],)
+            cursor = connection.cursor(dictionary=True)
+            cursor.execute(query,record)
+            email_list = cursor.fetchall()
+
+            cursor.close()
+            connection.close()
+        except Error as e :
+            cursor.close()
+            connection.close()
+            return{"error",str(e)},500
+        
+        if email_list == [] :
+            return {"result ": "아이디로 사용이 가능 합니다.","result_code":1 },200
+        else :
+            return {"result ": "아이디로 사용이 불가능 합니다.","result_code":0 },200
+
+class UserIsNickname(Resource) :
+    def post(self) :
+        data = request.get_json()
+
+        try :
+            connection = get_connection()
+            query = '''select * from user where nickname = %s ;'''
+            record = (data['nickname'],)
+            cursor = connection.cursor(dictionary=True)
+            cursor.execute(query,record)
+            nickname_list = cursor.fetchall()
+
+            cursor.close()
+            connection.close()
+        except Error as e :
+            cursor.close()
+            connection.close()
+            return{"error",str(e)},500
+        
+        if nickname_list == [] :
+            return {"result ": "닉네임으로 사용이 가능 합니다.","result_code":1 },200
+        else :
+            return {"result ": "닉네임으로 사용이 불가능 합니다.","result_code":0 },200
 
 class UserPasswordChanged(Resource):
     def post(self) :
