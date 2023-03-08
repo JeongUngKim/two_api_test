@@ -34,7 +34,7 @@ values(1,"범죄입니다","2020-01-02");
 select * from contentLike;
 
 insert into contentLike(contentId,contentLikeUserId)
-values(1,1);
+values(553,1);
 
 -- 내가 찜한 컨텐츠 삭제하기
 delete from contentLike 
@@ -109,3 +109,56 @@ select * from user;
 
 delete from user
 where id = 2;
+
+
+-- 내가 본 컨텐츠 insert
+select * from contentWatchme;
+insert into contentWatchme(userId,contentId)
+values("1","1");
+
+-- 내가 본 컨텐츠 목록 가져오기
+
+select cw.userId,cw.contentId,c.title,c.imgUrl,c.contentRating,c.tmdbcontentId,c.type
+from contentWatchme cw 
+join content c 
+on cw.contentId = c.Id
+where cw.userId = 1;
+
+-- 컨텐츠 가져오기
+select * from content;
+select * from contentLike;
+select * from user;
+
+select c.*, if(cl.contentLikeUserId = null  , 0 , 1 ) as 'like'
+from content c left join contentLike cl
+on  c.id = cl.contentId
+where c.id = 553;
+
+-- 컨텐츠 리뷰 가져오기
+select * from contentReview;
+select * from contentReviewLike;
+
+select cr.*, count(crl.contentReviewLikeUserId) as likeCnt
+from contentReview cr left join contentReviewLike crl
+on cr.contentReviewId = crl.contentReviewId 
+where cr.contentId = 553
+group by contentReviewId;
+
+
+insert into contentReviewLike(contentReviewId,contentReviewLikeUserId)
+values(2,3);
+
+select *
+from contentReview
+where contentId = 553;
+
+-- 컨텐츠 리뷰 댓글 가져오기
+select *
+from contentReviewComment
+where contentReviewId = 1;
+
+-- 파티 글 작성
+select * from partyBoard;
+
+insert into partyBoard(service,title,content,userId,serviceId,servicePassword)
+values()
