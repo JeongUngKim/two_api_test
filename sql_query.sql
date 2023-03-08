@@ -161,4 +161,66 @@ where contentReviewId = 1;
 select * from partyBoard;
 
 insert into partyBoard(service,title,content,userId,serviceId,servicePassword)
-values()
+values("Netflix","넷플구독자구함","3개월!!.",1,"abc@naver.com","1234");
+
+-- 파티 글 전체 가져오기
+
+select partyBoardId,service,title,content,createdAt,userId from partyBoard; 
+
+-- 내 파티 글 수정
+select * from partyBoard where partyBoardId = 1 and userId = 1;
+
+update partyBoard
+set service = "",title = "" , content = "" , serviceId = "", servicePassword = ""
+where partyBoardId = 1 and userId = 1;
+
+-- 내 파티 글 삭제
+
+select * from partyBoard;
+
+delete from partyBoard
+where partyBoardId = 2 and userId = 1;
+
+-- 파티 글 검색
+select pb.*,count(member) as memberCnt 
+from partyBoard pb left join party p 
+on pb.partyBoardId = p.partyBoardId 
+where pb.title like "%%"
+group by partyBoardId;
+
+select * from partyBoard;
+delete from partyBoard where partyBoardId = 4;
+-- 파티 맺기 ( 결제 완료 )
+select * from party;
+
+select userId ,service , finishedAt from partyBoard where partyBoardId = 5;
+
+insert into party(captain , member , partyBoardId )
+values(1,5,5);
+select * from paymentDetails;
+
+insert into paymentDetails(partyBoardId,userId,amount,date)
+values(3,2,4250,'2023-03-04');
+
+select * from paymentDetails;
+
+-- 내가 맺은 파티 항목 전체 가져오기
+select p.captain,p.partyBoardId,p.createdAt,pb.service,pb.title,pb.content,pb.serviceId,pb.servicePassword,pb.finishedAt
+from party p 
+left join partyBoard pb 
+on p.partyBoardId = pb.partyBoardId
+where member = 3;
+-- 내가 맺은 파티 일부 항목 가져오기
+
+-- 파티 맺기 취소 ( 결제 취소 )
+delete from party
+where member = 2 and partyBoardId = 5;
+
+-- 파티 완료 여부 확인
+
+select count(member) as memberCnt from party
+where partyBoardId = 5 
+group by partyBoardId;
+
+
+

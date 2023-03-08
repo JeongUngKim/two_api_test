@@ -4,6 +4,7 @@ from config import Config
 from flask_jwt_extended import JWTManager
 
 from resource.content import ContentWatch, ReviewComment, ReviewCommentUD, content, contentLike, contentReview, contentReviewLike, contentReviewUD, contentWatchme, search
+from resource.party import party, partyBoard, partyBoardUD, partyD, partySearch, partycheck
 from resource.user import UserContentLike, UserGenre, UserIsEmail, UserIsId, UserIsNickname, UserIspassword, UserLoginResource, UserLogoutResource, UserPasswordChanged, UserProfileChange, UserRegisterResource
 from resource.user import jwt_blacklist
 
@@ -56,7 +57,19 @@ api.add_resource(UserIspassword,"/ispassword")
 api.add_resource(UserPasswordChanged,"/changedpassword")
 api.add_resource(UserGenre,'/userGenre')
 
+# 파티 글 api
+api.add_resource(partyBoard,'/partyBoard')
+api.add_resource(partyBoardUD,'/partyBoard/<int:partyBoardId>')
 
+# 파티 맺기 api
+api.add_resource(party,'/party')
+api.add_resource(partyD,'/party/<int:partyBoardId>')
+
+# 파티 체크 api
+api.add_resource(partycheck,'/party/<int:partyBoardId>/check')
+
+# 파티 검색 api
+api.add_resource(partySearch,'/search/party')
 # 유저 정보 관련 api
 api.add_resource(UserProfileChange,'/user')
 

@@ -162,6 +162,8 @@ class UserIspassword(Resource):
     def post(self) :
         # {
         #     "userEmail" : "abc123@naver.com"
+        #     "questionNum":"1",
+        #     "questionAnswer":"인천"
         # }
 
         # 1. 클라이언트 로부터 데이터를 받아온다.
@@ -172,8 +174,8 @@ class UserIspassword(Resource):
             connection = get_connection()
             query = '''select *
                     from user
-                    where userEmail = %s ;'''
-            record = ( data["userEmail"] , )
+                    where userEmail = %s and questionNum= %s and questionAnswer = %s ;'''
+            record = ( data["userEmail"] , data['questionNum'] , data['questionAnswer'] )
 
             cursor = connection.cursor(dictionary=True)
 

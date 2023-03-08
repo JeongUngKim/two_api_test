@@ -4,11 +4,9 @@ from mysql.connector.errors import Error
 from mysql_connection import get_connection
 from flask_jwt_extended import jwt_required,get_jwt_identity
 
-class search(Resource) :
-    def post(self) :
-
-        data = request.get_json()
-
+class searchoption() :
+    def movieSearch(data) :
+        print(data)
         keyword = data["keyword"]
         genre = data["genre"]
         limit = data["limit"]
@@ -17,83 +15,75 @@ class search(Resource) :
         offset = data["offset"]
         filtering = data["filtering"]
         sort = data["sort"]
-        
-        if filtering == "":
-            filtering = "title"
-
-        if filtering not in ["title","contentRating","createdYear"] :
-            return {"sort_error":"필터 정렬 값 오류."}
-
-        if sort == "":
-            sort = "asc"
-
-        if rating == "" : 
-            rating = 0.0
-
-        if year == "" :
-            year = '1945-01-01'
-
-        if limit =="" :
-            limit = "10"
-        if offset =="":
-            offset = "0"
-        
         try :
             connection = get_connection()
-
             query='''select * 
                 from content 
                 where (title like "%'''+ keyword+'''%" or content like "%'''+ keyword+'''%" ) and type = "movie" and
                 genre like "%'''+genre+'''%" and contentRating >= '''+str(rating)+''' and createdYear >= "'''+str(year)+'''"
                 order by '''+filtering + ''' '''+sort+'''
                 limit '''+ str(offset)+''',''' +str(limit)+''';'''
-           
-            
+            print(query)
             cursor = connection.cursor(dictionary=True)
             cursor.execute(query)
-
             movie_list = cursor.fetchall()
             i = 0 
             for row in movie_list :
                 movie_list[i]['createdYear'] = row['createdYear'].isoformat()
                 i = i + 1
-            
             cursor.close()
             connection.close()
+        except Error as e :
+                print(e)
+                cursor.close()
+                connection.close()
+                return {"fail" : str(e)},500
+        return movie_list
 
+    def tvSearch(data) :
+        keyword = data["keyword"]
+        genre = data["genre"]
+        limit = data["limit"]
+        rating = data["rating"]
+        year = data["year"]
+        offset = data["offset"]
+        filtering = data["filtering"]
+        sort = data["sort"]
+        try :
+            connection = get_connection()
             query='''select * 
-                from content 
-                where (title like "%'''+ keyword+'''%" or content like "%'''+ keyword+'''%" ) and type = "tv" and
-                genre like "%'''+genre+'''%" and contentRating >= '''+str(rating)+''' and createdYear >= "'''+str(year)+'''"
-                order by '''+filtering + ''' '''+sort+'''
-                limit '''+ str(offset)+''',''' +str(limit)+''';'''
-            
-
-            connection=get_connection()
+                    from content 
+                    where (title like "%'''+ keyword+'''%" or content like "%'''+ keyword+'''%" ) and type = "tv" and
+                    genre like "%'''+genre+'''%" and contentRating >= '''+str(rating)+''' and createdYear >= "'''+str(year)+'''"
+                    order by '''+filtering + ''' '''+sort+'''
+                    limit '''+ str(offset)+''',''' +str(limit)+''';'''
             cursor = connection.cursor(dictionary=True)
             cursor.execute(query)
-            
             tv_list = cursor.fetchall()
             i = 0 
             for row in tv_list :
                 tv_list[i]['createdYear'] = row['createdYear'].isoformat()
                 i = i + 1
-
             cursor.close()
             connection.close()
-
+        except Error as e :
+                print(e)
+                cursor.close()
+                connection.close()
+                return {"fail" : str(e)},500
+        return tv_list
+    
+    def actorSearch(keyword) :
+        try :
             connection = get_connection()
-
             query = '''select * from actor where name like "%''' +keyword+'''%" ;  '''
             cursor = connection.cursor(dictionary=True)
             cursor.execute(query)
             actor_list = cursor.fetchall()
-
             i = 0
             for row in actor_list :
                 actor_list[i]['year'] = row['year'].isoformat()
                 i = i + 1
-
             cursor.close()
             connection.close()     
 
@@ -103,10 +93,52 @@ class search(Resource) :
             connection.close()
             return {"fail" : str(e)},500
         
-        return {"movie" : movie_list,
-                "tv":tv_list,
-                "actor":actor_list},200
+        return actor_list
+        
 
+class search(Resource) :
+    
+    def post(self) :
+
+        data = request.get_json()
+        type = request.args.get('type')
+
+        if data["filtering"] == "":
+            data["filtering"] = "title"
+        if data["filtering"] not in ["title","contentRating","createdYear","Id"] :
+            return {"sort_error":"필터 정렬 값 오류."}
+        if data["sort"] == "":
+            data["sort"] = "asc"
+        if data["rating"] == "" : 
+            data["rating"] = 0.0
+        if data["year"] == "" :
+            data["year"] = '1945-01-01'
+        if data["limit"] =="" :
+            data["limit"] = "10"
+        if data["offset"] =="":
+            data["offset"] = "0"
+        
+        if type == 'all' :
+            movie_list=searchoption.movieSearch(data)
+            tv_list=searchoption.tvSearch(data)
+            actor_list=searchoption.actorSearch(data["keyword"])
+
+            return {"movie" : movie_list,
+                    "tv":tv_list,
+                    "actor":actor_list},200
+            
+        elif type =='movie' :
+            movie_list = searchoption.movieSearch(data)    
+            return {'movie' : movie_list},200
+        elif type == 'tv' :
+            tv_list = searchoption.tvSearch(data)
+            return {'tv':tv_list},200
+        elif type == 'actor' :
+            actor_list = searchoption.actorSearch(data["keyword"])
+            return {'actor':actor_list},200
+        else :
+            return{'error':'type error'},500       
+            
 class content(Resource) :
     def get(self,contentId) :
         try :
