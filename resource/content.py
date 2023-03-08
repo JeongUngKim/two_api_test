@@ -33,15 +33,10 @@ class search(Resource) :
         if year == "" :
             year = '1945-01-01'
 
-        if genre == "" :
-            genre = "[,]"
-
         if limit =="" :
             limit = "10"
         if offset =="":
             offset = "0"
-
-        genre = genre.split(",")
         
         try :
             connection = get_connection()
@@ -49,7 +44,7 @@ class search(Resource) :
             query='''select * 
                 from content 
                 where (title like "%'''+ keyword+'''%" or content like "%'''+ keyword+'''%" ) and type = "movie" and
-                genre like "%'''+genre[0]+'''%" and genre like "%'''+genre[1]+'''%" and contentRating >= '''+str(rating)+''' and createdYear >= "'''+str(year)+'''"
+                genre like "%'''+genre+'''%" and contentRating >= '''+str(rating)+''' and createdYear >= "'''+str(year)+'''"
                 order by '''+filtering + ''' '''+sort+'''
                 limit '''+ str(offset)+''',''' +str(limit)+''';'''
            
@@ -69,7 +64,7 @@ class search(Resource) :
             query='''select * 
                 from content 
                 where (title like "%'''+ keyword+'''%" or content like "%'''+ keyword+'''%" ) and type = "tv" and
-                genre like "%'''+genre[0]+'''%" and genre like "%'''+genre[1]+'''%" and contentRating >= '''+str(rating)+''' and createdYear >= "'''+str(year)+'''"
+                genre like "%'''+genre+'''%" and contentRating >= '''+str(rating)+''' and createdYear >= "'''+str(year)+'''"
                 order by '''+filtering + ''' '''+sort+'''
                 limit '''+ str(offset)+''',''' +str(limit)+''';'''
             
@@ -111,6 +106,33 @@ class search(Resource) :
         return {"movie" : movie_list,
                 "tv":tv_list,
                 "actor":actor_list},200
+
+class content(Resource) :
+    def get(self,contentId) :
+        try :
+            connection = get_connection()
+            query = '''select c.*, if(cl.contentLikeUserId = null  , 0 , 1 ) as 'like'
+                    from content c left join contentLike cl
+                    on  c.id = cl.contentId
+                    where c.id = %s ;'''
+            record=(contentId,)
+            cursor=connection.cursor(dictionary=True)
+            cursor.execute(query,record)
+            content = cursor.fetchall()
+
+            cursor.close()
+            connection.close()
+        except Error as e:
+            print(str(e))
+            cursor.close()
+            connection.close()
+            return {'error':str(e)},500
+        
+        content[0]['createdYear'] = content[0]['createdYear'].isoformat()
+
+        return {'result':'success','content':content},200
+
+
 
 class contentLike(Resource) :
     @jwt_required()
@@ -179,6 +201,35 @@ class contentLike(Resource) :
         return {"result":"success"},200
             
 class contentReview(Resource) :
+    def get(self,contentId) :
+        try :
+            connection = get_connection()
+            query = '''select cr.*, count(crl.contentReviewLikeUserId) as likeCnt
+                        from contentReview cr left join contentReviewLike crl
+                        on cr.contentReviewId = crl.contentReviewId 
+                        where cr.contentId = %s
+                        group by contentReviewId;'''
+            record = (contentId,)
+            cursor = connection.cursor(dictionary=True)
+            cursor.execute(query,record)
+
+            contentReview_list = cursor.fetchall()
+            
+            cursor.close()
+            connection.close()
+            i = 0
+            for row in contentReview_list :
+                contentReview_list[i]['createdAt'] = row['createdAt'].isoformat()
+                contentReview_list[i]['updatedAt'] = row['updatedAt'].isoformat()
+                i=i+1
+        except Error as e :
+            print(str(e))
+            cursor.close()
+            connection.close()
+            return {'error',str(e)},500
+        
+        return {'result':'success','contentReviewList':contentReview_list},200
+
     @jwt_required()
     def post(self,contentId) :
 
@@ -217,6 +268,8 @@ class contentReview(Resource) :
             return {"fail":str(e)},500
 
         return {"result":"success","contentReviewId":lastId},200
+
+    
 
 class contentReviewUD(Resource) :
     @jwt_required()
@@ -343,6 +396,33 @@ class contentReviewLike(Resource) :
         return {"result":"success"},200
 
 class ReviewComment(Resource):
+    def get(self,contentReviewId):
+        try:
+            connection = get_connection()
+            query = '''select *
+                    from contentReviewComment
+                    where contentReviewId = %s ;'''
+            record = (contentReviewId,)
+
+            cursor = connection.cursor(dictionary=True)
+            cursor.execute(query,record)
+
+            comment_list = cursor.fetchall()
+
+            i = 0
+            for row in comment_list :
+                comment_list[i]['createdAt'] = row['createdAt'].isoformat()
+                comment_list[i]['updatedAt'] = row['updatedAt'].isoformat()
+            cursor.close()
+            connection.close()
+        except Error as e :
+            print(str(e))
+            cursor.close()
+            connection.close()
+            return {'error',str(e)},500
+        
+        return {'result':'success','commentList':comment_list},200
+    
     @jwt_required()
     def post(self,contentReviewId) :
         userId = get_jwt_identity()
@@ -440,4 +520,77 @@ class ReviewCommentUD(Resource):
             return {'error':str(e)},500
 
         return {'result':'success'},200        
+
+class ContentWatch(Resource) :
+    @jwt_required()
+    def post(self,contentId):
+        userId = get_jwt_identity()
+
+        try :
+            connection = get_connection()
+
+            query = '''insert into contentWatchme(userId,contentId)
+                        values(%s,%s);'''
+            record = (userId,contentId)
+
+            cursor = connection.cursor()
+
+            cursor.execute(query,record)
+
+            connection.commit()
+
+            cursor.close()
+
+            connection.close()
+
+        except Error as e :
+            print(str(e))
+
+            cursor.close()
+
+            connection.close()
+
+            return {'error':str(e)},500
+        
+        return {'result':'success'},200
+
+class contentWatchme(Resource):
+    @jwt_required()
+    def get(self):
+        userId = get_jwt_identity()
+
+        try : 
+            connection = get_connection()
+            query = '''select cw.userId,cw.contentId,c.title,c.imgUrl,c.contentRating,c.tmdbcontentId,c.type
+                    from contentWatchme cw 
+                    join content c 
+                    on cw.contentId = c.Id
+                    where cw.userId = %s;'''
+            record = (userId,)
+
+            cursor = connection.cursor(dictionary=True)
+
+            cursor.execute(query,record)
+
+            contentWatch_list = cursor.fetchall()
+
+            cursor.close()
+
+            connection.close()
+
+        except Error as e :
+            print(str(e))
+
+            cursor.close()
+
+            connection.close()
+
+            return {'error':str(e)},500
+        
+
+
+        return {'result':'success','contentWatch_list':contentWatch_list},200
+
+
+
 
