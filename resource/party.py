@@ -15,7 +15,7 @@ class partySearch(Resource):
             query = '''select pb.*,count(member) as memberCnt 
                     from partyBoard pb left join party p 
                     on pb.partyBoardId = p.partyBoardId 
-                    where pb.title like "%'''+data['keyword']+'''%"
+                    where pb.title like "%'''+data['keyword']+'''%" or pb.service like "%'''+data['service']+'''%"
                     group by partyBoardId;'''
             cursor = connection.cursor(dictionary=True)
 
@@ -47,7 +47,7 @@ class partyBoard(Resource) :
 #         {
 #           "service" : "Netflix",
 #           "title" : "넷플릭스 구독자 구함",
-#           "content" : "3개월간 이용하실 분",
+#          
 #           "serviceId" : "abc@naver.com",
 #           "servicePassword" : "12345",
 #           "finishedAt" : "2022-03-15"
@@ -61,10 +61,10 @@ class partyBoard(Resource) :
         try :
             connection = get_connection()
 
-            query = '''insert into partyBoard(service,title,content,userId,serviceId,servicePassword,finishedAt)
-                    values(%s,%s,%s,%s,%s,%s,%s);'''
+            query = '''insert into partyBoard(service,title,userId,serviceId,servicePassword,finishedAt)
+                    values(%s,%s,%s,%s,%s,%s);'''
 
-            record = (data['service'],data['title'],data['content'],userId,data['serviceId'],data['servicePassword'],data['finishedAt'])
+            record = (data['service'],data['title'],userId,data['serviceId'],data['servicePassword'],data['finishedAt'])
 
             cursor = connection.cursor()
 
@@ -86,7 +86,7 @@ class partyBoard(Resource) :
         try :
             connection = get_connection()
 
-            query = '''select partyBoardId,service,title,content,createdAt,userId from partyBoard '''
+            query = '''select partyBoardId,service,title,createdAt,userId from partyBoard '''
 
             cursor = connection.cursor(dictionary=True)
             cursor.execute(query)
@@ -114,7 +114,7 @@ class partyBoardUD(Resource) :
 #         {
 #     "service" : "Netflix",
 #     "title" : "넷플릭스 모집합니다.",
-#     "content" : "3명 구합니다.",
+#    
 #     "serviceId" : "rrc0777@naver.com",
 #     "servicePassword" : "1234"
 # }
@@ -126,9 +126,9 @@ class partyBoardUD(Resource) :
             connection = get_connection()
 
             query = '''update partyBoard
-                    set service = %s,title = %s , content = %s , serviceId = %s, servicePassword = %s
+                    set service = %s,title = %s  , serviceId = %s, servicePassword = %s
                     where partyBoardId = %s and userId = %s;'''
-            record = (data['service'],data['title'],data['content'],data['serviceId'],password,partyBoardId,userId)
+            record = (data['service'],data['title'],data['serviceId'],password,partyBoardId,userId)
 
             cursor = connection.cursor()
 
@@ -238,7 +238,7 @@ class party(Resource) :
         try :
             connection = get_connection()
 
-            query = '''select p.captain,p.partyBoardId,p.createdAt,pb.service,pb.title,pb.content,pb.serviceId,pb.servicePassword,pb.finishedAt
+            query = '''select p.captain,p.partyBoardId,p.createdAt,pb.service,pb.title,pb.serviceId,pb.servicePassword,pb.finishedAt
                         from party p 
                         join partyBoard pb 
                         on p.partyBoardId = pb.partyBoardId

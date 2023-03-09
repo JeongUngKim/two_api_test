@@ -160,8 +160,8 @@ where contentReviewId = 1;
 -- 파티 글 작성
 select * from partyBoard;
 
-insert into partyBoard(service,title,content,userId,serviceId,servicePassword)
-values("Netflix","넷플구독자구함","3개월!!.",1,"abc@naver.com","1234");
+insert into partyBoard(service,title,userId,serviceId,servicePassword)
+values("Netflix","넷플구독자구함",1,"abc@naver.com","1234");
 
 -- 파티 글 전체 가져오기
 
@@ -185,7 +185,7 @@ where partyBoardId = 2 and userId = 1;
 select pb.*,count(member) as memberCnt 
 from partyBoard pb left join party p 
 on pb.partyBoardId = p.partyBoardId 
-where pb.title like "%%"
+where pb.title like "%아마존%" or pb.service like "%Netflix%"
 group by partyBoardId;
 
 select * from partyBoard;
@@ -222,5 +222,6 @@ select count(member) as memberCnt from party
 where partyBoardId = 5 
 group by partyBoardId;
 
+-- 
 
 
