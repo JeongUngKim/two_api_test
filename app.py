@@ -3,10 +3,10 @@ from flask_restful import Api
 from config import Config
 from flask_jwt_extended import JWTManager
 
-from resource.content import ContentWatch, ReviewComment, ReviewCommentUD, content, contentLike, contentReview, contentReviewLike, contentReviewUD, contentWatchme, search
-from resource.party import party, partyBoard, partyBoardUD, partyD, partySearch, partycheck
-from resource.user import UserContentLike, UserGenre, UserIsEmail, UserIsId, UserIsNickname, UserIspassword, UserLoginResource, UserLogoutResource, UserPasswordChanged, UserProfileChange, UserRegisterResource
-from resource.user import jwt_blacklist
+from resources.content import ContentWatch, ReviewComment, ReviewCommentUD, content, contentLike, contentReview, contentReviewLike, contentReviewUD, contentWatchme, search
+from resources.party import party, partyBoard, partyBoardUD, partyD, partySearch, partycheck
+from resources.user import UserContentLike, UserGenre, UserIsEmail, UserIsId, UserIsNickname, UserIspassword, UserLoginResource, UserLogoutResource, UserPasswordChanged, UserProfileChange, UserRegisterResource
+from resources.user import jwt_blacklist
 
 app = Flask(__name__)
 
