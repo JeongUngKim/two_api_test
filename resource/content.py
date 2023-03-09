@@ -565,6 +565,8 @@ class ContentWatch(Resource) :
                         values(%s,%s);'''
             record = (userId,contentId)
 
+            print(record)
+
             cursor = connection.cursor()
 
             cursor.execute(query,record)
@@ -605,6 +607,9 @@ class contentWatchme(Resource):
             cursor.execute(query,record)
 
             contentWatch_list = cursor.fetchall()
+
+            print(userId)
+            print(contentWatch_list)
 
             cursor.close()
 

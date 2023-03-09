@@ -8,7 +8,7 @@ from utils import check_password, hash_password
 class partySearch(Resource):
     def post(self) :
         data = request.get_json()
-
+        
         try :
             connection = get_connection()
 
