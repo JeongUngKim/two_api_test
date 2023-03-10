@@ -223,19 +223,4 @@ where partyBoardId = 5
 group by partyBoardId;
 
 -- 
-
-select * from contentWatchme;
-
-select cw.userId,cw.contentId,c.title,c.imgUrl,c.contentRating,c.tmdbcontentId,c.type
-                    from contentWatchme cw 
-                    join content c 
-                    on cw.contentId = c.Id
-                    where cw.userId = 1;
-
-select * from tag;
-
-select *
-from contentReviewComment;
-
-select * from partyBoard;
-				
+select * from user where id = 1
