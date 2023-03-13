@@ -70,6 +70,7 @@ class partyBoard(Resource) :
 
             cursor.execute(query,record)
 
+            id = cursor.lastrowid
             connection.commit()
 
             cursor.close()
@@ -80,7 +81,7 @@ class partyBoard(Resource) :
             connection.close()
             return {'error':str(e)},500
         
-        return {'result':'success'},200
+        return {'result':'success','partyBoardId' : id},200
 
     def get(self) : 
         page = request.args.get('page')
@@ -95,7 +96,7 @@ class partyBoard(Resource) :
             cursor.execute(query)
 
             partyBoard_list = cursor.fetchall()
-
+            
             i = 0
             for row in partyBoard_list :
                 partyBoard_list[i]['createdAt'] = row['createdAt'].isoformat()
