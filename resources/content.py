@@ -234,13 +234,17 @@ class contentLike(Resource) :
             
 class contentReview(Resource) :
     def get(self,contentId) :
+        page = request.args.get('page')
+        page = int(page) * 10
+
         try :
             connection = get_connection()
             query = '''select cr.*, count(crl.contentReviewLikeUserId) as likeCnt
                         from contentReview cr left join contentReviewLike crl
                         on cr.contentReviewId = crl.contentReviewId 
                         where cr.contentId = %s
-                        group by contentReviewId;'''
+                        group by contentReviewId
+                        limit '''+str(page)+''',10 ;'''
             record = (contentId,)
             cursor = connection.cursor(dictionary=True)
             cursor.execute(query,record)
@@ -260,7 +264,9 @@ class contentReview(Resource) :
             connection.close()
             return {'error',str(e)},500
         
-        return {'result':'success','contentReviewList':contentReview_list},200
+        return {'result':'success','contentReviewList':contentReview_list,
+                'pageNum':page,
+                'contentReviewSize':len(contentReview_list)},200
 
     @jwt_required()
     def post(self,contentId) :
@@ -429,11 +435,14 @@ class contentReviewLike(Resource) :
 
 class ReviewComment(Resource):
     def get(self,contentReviewId):
+        page = request.args.get('page')
+        page = int(page) * 10
         try:
             connection = get_connection()
             query = '''select *
                     from contentReviewComment
-                    where contentReviewId = %s ;'''
+                    where contentReviewId = %s
+                    limit '''+str(page)+''',10 ;'''
             record = (contentReviewId,)
 
             cursor = connection.cursor(dictionary=True)
@@ -453,7 +462,9 @@ class ReviewComment(Resource):
             connection.close()
             return {'error',str(e)},500
         
-        return {'result':'success','commentList':comment_list},200
+        return {'result':'success','commentList':comment_list,
+                'pageNum':page,
+                'commentSize':len(comment_list)},200
     
     @jwt_required()
     def post(self,contentReviewId) :
@@ -592,14 +603,16 @@ class contentWatchme(Resource):
     @jwt_required()
     def get(self):
         userId = get_jwt_identity()
-
+        page = request.args.get('page')
+        page = int(page) * 10
         try : 
             connection = get_connection()
             query = '''select cw.userId,cw.contentId,c.title,c.imgUrl,c.contentRating,c.tmdbcontentId,c.type
                     from contentWatchme cw 
                     join content c 
                     on cw.contentId = c.Id
-                    where cw.userId = %s;'''
+                    where cw.userId = %s
+                    limit '''+str(page) + ''', 10 ;'''
             record = (userId,)
 
             cursor = connection.cursor(dictionary=True)
@@ -607,9 +620,6 @@ class contentWatchme(Resource):
             cursor.execute(query,record)
 
             contentWatch_list = cursor.fetchall()
-
-            print(userId)
-            print(contentWatch_list)
 
             cursor.close()
 
@@ -626,7 +636,9 @@ class contentWatchme(Resource):
         
 
 
-        return {'result':'success','contentWatch_list':contentWatch_list},200
+        return {'result':'success','contentWatch_list':contentWatch_list,
+                "pageNum":page,
+                "contentWatchSize":len(contentWatch_list)},200
 
 
 

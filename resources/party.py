@@ -83,10 +83,13 @@ class partyBoard(Resource) :
         return {'result':'success'},200
 
     def get(self) : 
+        page = request.args.get('page')
+        page = int(page) * 10
         try :
             connection = get_connection()
 
-            query = '''select partyBoardId,service,title,createdAt,userId from partyBoard '''
+            query = '''select partyBoardId,service,title,createdAt,userId from partyBoard 
+            limit '''+str(page)+''',10 ; '''
 
             cursor = connection.cursor(dictionary=True)
             cursor.execute(query)
@@ -106,7 +109,9 @@ class partyBoard(Resource) :
             connection.close()
             return {'error':str(e)},500
         
-        return {'result':'success','partyBoard' : partyBoard_list},200
+        return {'result':'success','partyBoard' : partyBoard_list
+                ,'pageNum':page,
+                'partyBoardSize':len(partyBoard_list)},200
 
 class partyBoardUD(Resource) :
     @jwt_required()
@@ -234,7 +239,8 @@ class party(Resource) :
     def get(self) :
 
         userId = get_jwt_identity()
-
+        page = request.args.get('page')
+        page = int(page) * 10
         try :
             connection = get_connection()
 
@@ -242,7 +248,8 @@ class party(Resource) :
                         from party p 
                         join partyBoard pb 
                         on p.partyBoardId = pb.partyBoardId
-                        where member = %s;'''
+                        where member = %s 
+                        limit '''+str(page) + ''',10 ;'''
             record = (userId,)
 
             cursor = connection.cursor(dictionary=True)
@@ -267,7 +274,9 @@ class party(Resource) :
             connection.close()
             return {'error',str(e)},500
         
-        return {'result': 'success','partyList' : party_list},200
+        return {'result': 'success','partyList' : party_list,
+                'pageNum':page,
+                'partySize':len(party_list)},200
         
 class partyD(Resource) :
     @jwt_required()

@@ -311,14 +311,17 @@ class UserContentLike(Resource):
     @jwt_required()
     def get(self) :
         userId = get_jwt_identity()
-
+        page = request.args.get('page')
+        page = int(page) * 10
+        print(page)
         try :
             connection = get_connection()
 
             query = '''select cl.contentId,cl.contentLikeUserId,c.title,c.genre,c.content,c.imgUrl,c.contentRating,c.createdYear,c.tmdbcontentId 
                         from contentLike cl join content c 
                         on cl.contentId = c.Id 
-                        where cl.contentLikeUserId = %s ; '''
+                        where cl.contentLikeUserId = %s 
+                        limit ''' + str(page) +''', 10 ; ''' 
             
             record = (userId,)
 
@@ -347,7 +350,9 @@ class UserContentLike(Resource):
 
             return {"fail":str(e)},500
 
-        return {"contentLike_list" : contentLike_list },200
+        return {"contentLike_list" : contentLike_list ,
+                "pageNum":page,
+                'contentSize':len(contentLike_list)},200
 
 class UserGenre(Resource) :
     @jwt_required()
