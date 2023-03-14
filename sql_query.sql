@@ -223,4 +223,26 @@ where partyBoardId = 5
 group by partyBoardId;
 
 -- 
-select * from user where id = 1
+select * from actor;
+
+--
+select * from content
+limit 10 , 10 ;
+
+
+select * from user;
+
+-- 조회수 톱 20 
+select c.*,count(cm.contentId) as cnt
+from contentWatchme cm right join content c
+on cm.contentId = c.id 
+group by c.id
+order by cnt desc
+limit 0, 20;
+
+select * from content where title like '%원피스%';
+
+select * from actor;
+        
+insert into contentWatchme(userId,contentId)
+values(5,424);
