@@ -267,6 +267,7 @@ class party(Resource) :
                 party_list[i]['createdAt'] = row['createdAt'].isoformat()
                 party_list[i]['finishedAt'] = row['finishedAt'].isoformat()
                 i = i + 1 
+            
             cursor.close()
 
             connection.close()
