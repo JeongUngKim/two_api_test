@@ -208,7 +208,7 @@ class UserIsId(Resource) :
         try :
             connection = get_connection()
 
-            query = '''select * 
+            query = '''select id,name,userEmail 
                     from user
                     where name = %s and questionNum= %s and questionAnswer = %s ;'''
             record = (data['name'] , data['questionNum'] , data['questionAnswer'])
