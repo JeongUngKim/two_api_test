@@ -246,3 +246,10 @@ select * from actor;
         
 insert into contentWatchme(userId,contentId)
 values(5,424);
+
+--
+select * from userGenre;
+
+select * from tag;
+
+select pb.*,u.userEmail from partyBoard pb join user u on pb.userId = u.id ;
