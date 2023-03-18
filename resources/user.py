@@ -250,9 +250,9 @@ class UserIsEmail(Resource) :
             return{"error",str(e)},500
         
         if email_list == [] :
-            return {"result ": "아이디로 사용이 가능 합니다.","result_code":1 },200
+            return {"result ": "아이디로 사용이 가능 합니다.","result_code":"1" },200
         else :
-            return {"result ": "아이디로 사용이 불가능 합니다.","result_code":0 },200
+            return {"result ": "아이디로 사용이 불가능 합니다.","result_code":"0" },200
 
 class UserIsNickname(Resource) :
     def post(self) :
@@ -274,9 +274,9 @@ class UserIsNickname(Resource) :
             return{"error",str(e)},500
         
         if nickname_list == [] :
-            return {"result ": "닉네임으로 사용이 가능 합니다.","result_code":1 },200
+            return {"result ": "닉네임으로 사용이 가능 합니다.","result_code":"1" },200
         else :
-            return {"result ": "닉네임으로 사용이 불가능 합니다.","result_code":0 },200
+            return {"result ": "닉네임으로 사용이 불가능 합니다.","result_code":"0" },200
 
 class UserPasswordChanged(Resource):
     def put(self) :
