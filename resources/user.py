@@ -281,11 +281,11 @@ class UserIsNickname(Resource) :
 class UserPasswordChanged(Resource):
     def put(self) :
         # { userEmail : abc@naver.com 
-        #   newpassword : 1234 }
+        #   password : 1234 }
 
         data = request.get_json()
 
-        password = hash_password(data["newpassword"])
+        password = hash_password(data["password"])
         try :
             connection = get_connection()
 
