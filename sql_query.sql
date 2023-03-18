@@ -253,3 +253,7 @@ select * from userGenre;
 select * from tag;
 
 select pb.*,u.userEmail from partyBoard pb join user u on pb.userId = u.id ;
+
+--
+select * from user;
+
