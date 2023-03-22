@@ -312,7 +312,7 @@ class UserContentLike(Resource):
     def get(self) :
         userId = get_jwt_identity()
         page = request.args.get('page')
-        page = int(page) * 10
+        pageCount = int(page) * 10
         print(page)
         try :
             connection = get_connection()
@@ -321,7 +321,7 @@ class UserContentLike(Resource):
                         from contentLike cl join content c 
                         on cl.contentId = c.Id 
                         where cl.contentLikeUserId = %s 
-                        limit ''' + str(page) +''', 10 ; ''' 
+                        limit ''' + str(pageCount) +''', 10 ; ''' 
             
             record = (userId,)
 
