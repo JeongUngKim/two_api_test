@@ -19,7 +19,7 @@ class searchoption() :
             connection = get_connection()
             query='''select * 
                 from content 
-                where (title like "%'''+ keyword+'''%" or content like "%'''+ keyword+'''%" ) and type = "movie" and
+                where title like "%'''+ keyword+'''%" and type = "movie" and
                 genre like "%'''+genre+'''%" and contentRating >= '''+str(rating)+''' and createdYear >= "'''+str(year)+'''"
                 order by '''+filtering + ''' '''+sort+'''
                 limit '''+ str(offset)+''',''' +str(limit)+''';'''
@@ -53,7 +53,7 @@ class searchoption() :
             connection = get_connection()
             query='''select * 
                     from content 
-                    where (title like "%'''+ keyword+'''%" or content like "%'''+ keyword+'''%" ) and type = "tv" and
+                    where title like "%'''+ keyword+'''%" and type = "tv" and
                     genre like "%'''+genre+'''%" and contentRating >= '''+str(rating)+''' and createdYear >= "'''+str(year)+'''"
                     order by '''+filtering + ''' '''+sort+'''
                     limit '''+ str(offset)+''',''' +str(limit)+''';'''

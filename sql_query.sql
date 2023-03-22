@@ -254,6 +254,11 @@ select * from tag;
 
 select pb.*,u.userEmail from partyBoard pb join user u on pb.userId = u.id ;
 
---
 select * from user;
 
+delete from user
+where id = 28;
+
+select * from userGenre;
+
+select * from content;  
