@@ -151,7 +151,12 @@ values(2,3);
 select *
 from contentReview
 where contentId = 553;
+-- 내가 작성한 컨텐츠 리뷰 가져오기
 
+select contentReviewId,contentId,title,content,userRating,createdAt,updatedAt
+from contentReview
+where contentReviewUserId = 3;
+select * from user;
 -- 컨텐츠 리뷰 댓글 가져오기
 select *
 from contentReviewComment
