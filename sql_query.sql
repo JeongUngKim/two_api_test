@@ -253,17 +253,63 @@ insert into contentWatchme(userId,contentId)
 values(5,424);
 
 --
-select * from userGenre;
+select * from partyBoard;
+-- 48 , 1
+select * from party;
 
-select * from tag;
+delete from party
+where captain = 1 and member = 4content_test;
 
-select pb.*,u.userEmail from partyBoard pb join user u on pb.userId = u.id ;
+-- 커뮤니티 테이블 글 작성
+select * from community;
 
-select * from user;
+insert into community(userId,title,content,imgUrl)
+values(3,"알랑캉","반갑습니다.","https:");
 
-delete from user
-where id = 28;
+-- 커뮤니티 테이블 글 수정
+update community
+set title = "안녕못해!" , content = "반갑지않거덩?", imgUrl = "123"
+where userId = "1" and communityId = "1";
 
-select * from userGenre;
+-- 커뮤니티 테이블 글 삭제
+delete from community
+where communityId = "1" and userId = "1";
 
-select * from content;  
+select * from community;
+
+-- 커뮤니티 전체 글 가져오기
+select cm.*,u.nickname,u.userEmail,u.profileImgUrl
+from community cm join user u
+on cm.userId = u.id 
+limit 0 , 100;
+
+select * from communityLike;
+
+-- 커뮤니티 내가 쓴 글 가져오기
+select cm.*,u.nickname,u.userEmail,u.profileImgUrl
+from community cm join user u
+on cm.userId = u.id
+where cm.userId = 3
+limit 0 , 100;
+
+-- 커뮤니티 검색(title or content)
+select cm.*,u.nickname,u.userEmail,u.profileImgUrl 
+from community cm join user u
+on cm.userId = u.id
+where title like "%반갑%" or content like "%반갑%"
+limit 0 , 10;
+
+-- 좋아요 추가
+select * from community;
+
+select * from communityLike;
+
+insert into communityLike(communityId,userId)
+values(5,4);
+
+-- 좋아요 취소
+delete from communityLike
+where communityId= 3 and userId = 5; 
+
+truncate communityLike
+
