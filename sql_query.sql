@@ -311,5 +311,53 @@ values(5,4);
 delete from communityLike
 where communityId= 3 and userId = 5; 
 
-truncate communityLike
+-- 
+select * from partyBoard;
 
+select * from user;
+
+select * from party;
+
+select * from actor;
+
+select * from content
+where title like "%아바타%" ;
+
+select * from actor where name = '마동석';
+
+
+select * from actor
+where tmdbcontentIdList like "%19995%";
+
+select * from community;
+
+select * from partyBoard;
+
+select * from party;
+
+truncate paymentDetails;
+
+delete from partyBoard
+where partyBoardId = 16;
+
+delete from community
+where communityId not in (23,24,25);
+
+select pb.userId,pb.service,pb.serviceId,pb.servicePassword,pb.finishedAt,u.userEmail
+                        from party p join partyBoard pb
+                        on p.partyBoardId = pb.partyBoardId join user u
+                        on p.member = u.id
+                        where p.partyBoardId =
+                    ;    
+select * from party;
+
+select * from partyBoard;
+insert into party(captain,member,partyBoardId)
+values(45,1,2);
+-- party 1 user 21 ad 2 , 45
+
+select * from partyBoard;
+
+select * from party;
+
+select * from contentWatchme;
