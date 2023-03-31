@@ -312,7 +312,7 @@ class party(Resource) :
         try :
             connection = get_connection()
 
-            query = '''select p.captain,p.partyBoardId,p.createdAt,pb.service,pb.title,pb.serviceId,pb.servicePassword,pb.finishedAt,u.userEmail,u.profileImgUrl,u.nickname
+            query = '''select p.captain as userId,p.partyBoardId,p.createdAt,pb.service,pb.title,pb.serviceId,pb.servicePassword,pb.finishedAt,u.userEmail,u.profileImgUrl,u.nickname
                         from party p 
                         join partyBoard pb 
                         on p.partyBoardId = pb.partyBoardId join user u 
@@ -344,7 +344,7 @@ class party(Resource) :
             connection.close()
             return {'error',str(e)},500
         
-        return {'result': 'success','partyList' : party_list,
+        return {'result': 'success','partylist' : party_list,
                 'pageNum':page,
                 'partySize':str(len(party_list))},200
         
@@ -381,12 +381,12 @@ class partycheck(Resource) :
         try :
             connection = get_connection()
 
-            query = '''select pb.userId,pb.service,pb.serviceId,pb.servicePassword,pb.finishedAt,u.userEmail
-                        from party p join partyBoard pb
-                        on p.partyBoardId = pb.partyBoardId join user u
-                        on p.member = u.id
-                        where p.partyBoardId = %s 
-                        ;
+            query = '''select pb.partyBoardId, pb.userId,pb.service,pb.serviceId,pb.servicePassword,pb.finishedAt,u.userEmail
+                    from partyBoard pb left join party p 
+                    on pb.partyBoardId = p.partyBoardId left join user u
+                    on p.member = u.id
+                    where pb.partyBoardId = %s
+; 
                         '''
             record = (partyBoardId,)
 
@@ -399,7 +399,8 @@ class partycheck(Resource) :
             i=0
             for member in partyMemberList :
                 partyMemberList[i]['finishedAt'] = member['finishedAt'].isoformat()
-                memberlist.append(partyMemberList[i]['userEmail'])
+                if partyMemberList[i]['userEmail'] is not None :
+                    memberlist.append(partyMemberList[i]['userEmail'])
                 i+=1
 
             cursor.close()
@@ -418,3 +419,46 @@ class partycheck(Resource) :
                 "memberEmail":memberlist,"service":partyMemberList[0]['service'],
                  "serviceId":partyMemberList[0]['serviceId'],"servicePassword":partyMemberList[0]['servicePassword'] ,
                  "finishedAt":partyMemberList[0]['finishedAt']},200
+
+class partyCaptain(Resource):
+    @jwt_required()
+    def get(self) :
+        userId = get_jwt_identity()
+        page = request.args.get('page')
+        pageCount = int(page) * 10
+        try : 
+            connection = get_connection()
+
+            query = '''select pb.partyBoardId,pb.service,pb.title,pb.createdAt,pb.userId,pb.serviceId,pb.servicePassword,pb.finishedAt,u.userEmail,u.profileImgUrl,u.nickname,count(pd.userId) as memberCnt 
+                    from paymentDetails pd
+                    join partyBoard pb
+                    on pd.partyBoardId = pb.partyBoardId join user u
+                    on pb.userId = u.id
+                    where pb.userId = %s
+                    group by pb.partyBoardId
+                    limit '''+str(pageCount) + ''',10 ;'''
+            record = (userId,)
+
+            cursor = connection.cursor(dictionary=True)
+
+            cursor.execute(query,record)
+
+            captainparty = cursor.fetchall();
+
+            cursor.close()
+
+            connection.close()
+
+            i = 0 
+            for row in captainparty :
+                captainparty[i]['createdAt'] = row['createdAt'].isoformat()
+                captainparty[i]['finishedAt'] = row['finishedAt'].isoformat()
+                i+=1
+            
+        except Error as e :
+            print(str(e))
+            cursor.close()
+            connection.close()
+            return {'error',str(e)},500
+        
+        return {'result':'success','partylist':captainparty},200
