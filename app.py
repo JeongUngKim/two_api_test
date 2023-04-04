@@ -6,7 +6,6 @@ from resources.community import community, communityLike, communityUD
 
 from resources.content import ContentWatch, ReviewComment, ReviewCommentUD, content, contentLike, contentRank, contentReview, contentReviewLike, contentReviewMe, contentReviewUD, contentWatchme, search
 from resources.party import party, partyBoard, partyBoardUD, partyCaptain, partyD, partySearch, partycheck
-
 from resources.user import UserContentLike, UserGenre, UserIsEmail, UserIsId, UserIsNickname, UserIspassword, UserLoginResource, UserLogoutResource, UserPasswordChanged, UserProfileChange, UserRegisterResource
 from resources.user import jwt_blacklist
 
